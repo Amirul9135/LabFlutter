@@ -77,6 +77,7 @@ class _ExpenseListState extends State<ExpenseList> {
   void _save() async {
     //test add 
     RequestController req1 = RequestController(path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur", server: "https://timeapi.io");
+    
     await req1.get();
     print(req1.result());
 
@@ -92,8 +93,8 @@ class _ExpenseListState extends State<ExpenseList> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: implement build 
+  void initState(){
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -101,6 +102,11 @@ class _ExpenseListState extends State<ExpenseList> {
         ),
       );
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build 
 
     return Scaffold(
       appBar: AppBar(
@@ -249,6 +255,7 @@ class Expense {
   String desc;
   String amount;
   Expense(this.amount, this.desc);
+
     Map<String, dynamic> toJson() => {
         'desc': desc,
         'amount': amount,
