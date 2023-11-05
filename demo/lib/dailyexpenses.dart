@@ -113,7 +113,7 @@ class _ExpenseListState extends State<ExpenseList> {
 
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: 0,minute: 0),
+      initialTime: TimeOfDay.now(),
     );
     if (pickedDate != null && pickedTime != null) {
       setState(() {
