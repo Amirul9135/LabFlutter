@@ -27,7 +27,7 @@ class RequestController {
     _headers["Content-Type"] = "application/json; charset=UTF-8";
   }
 
-  post() async {
+  Future<void> post() async {
     _res = await http.post(
       Uri.parse(server + path),
       headers: _headers,
@@ -35,7 +35,7 @@ class RequestController {
     );
     _parseResult();
   }
-  get() async {
+  Future<void> get() async {
     _res = await http.get(
       Uri.parse(server + path),
       headers: _headers,

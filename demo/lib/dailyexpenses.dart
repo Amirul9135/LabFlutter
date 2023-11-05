@@ -29,6 +29,7 @@ class _ExpenseListState extends State<ExpenseList> {
   final List<Expense> expenses = [];
   final TextEditingController descController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
+  final TextEditingController txtDateController = TextEditingController(); //new
   final TextEditingController totalAmountController = TextEditingController();
   double totalAmount = 0;
 
@@ -37,28 +38,17 @@ class _ExpenseListState extends State<ExpenseList> {
     String description = descController.text.trim();
     String amount = amountController.text.trim();
     if (amount.isNotEmpty && description.isNotEmpty) {
-      RequestController req = RequestController(
-          path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur",
-          server: "https://timeapi.io");
-      await req.get();
-      // only proceed if status code is 200 == success
-      if (req.status() == 200) {
-        dynamic res = req.result();
-        String dateTime =
-            "${res["year"]}-${res["month"]}-${res["day"]} ${res["hour"]}:${res["minute"]}:${res["seconds"]}";
-        Expense exp = Expense(double.parse(amount), description, dateTime);
-        if (await exp.save()) {
-          setState(() {
-            expenses.add(exp);
-            descController.clear();
-            amountController.clear();
-            calculateTotal();
-          });
-        } else {
-          _showMessage("Failed to save Expenses data");
-        }
+      Expense exp =
+          Expense(double.parse(amount), description, txtDateController.text);
+      if (await exp.save()) {
+        setState(() {
+          expenses.add(exp);
+          descController.clear();
+          amountController.clear();
+          calculateTotal();
+        });
       } else {
-        _showMessage("Failed to load current time");
+        _showMessage("Failed to save Expenses data");
       }
     }
   }
@@ -113,12 +103,42 @@ class _ExpenseListState extends State<ExpenseList> {
   }
 
   //new
+  _selectDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: 0,minute: 0),
+    );
+    if (pickedDate != null && pickedTime != null) {
+      setState(() {
+        txtDateController.text =
+            "${pickedDate.year}-${pickedDate.month}-${pickedDate.day} ${pickedTime.hour}:${pickedTime.minute}:00";
+      });
+    }
+  }
+
+  //new
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      _showMessage("Welcome to stupib Flutter ${widget.username}");
+      _showMessage("Welcome ${widget.username}");
       expenses.addAll(await Expense.loadAll());
+
+      RequestController req = RequestController(
+          path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur",
+          server: "https://timeapi.io");
+      req.get().then((value) {
+        dynamic res = req.result();
+        txtDateController.text =
+            "${res["year"]}-${res["month"]}-${res["day"]} ${res["hour"]}:${res["minute"]}:${res["seconds"]}";
+      });
       setState(() {
         calculateTotal();
       });
@@ -152,6 +172,17 @@ class _ExpenseListState extends State<ExpenseList> {
               keyboardType: TextInputType.number,
               controller: amountController,
               decoration: InputDecoration(labelText: 'Amount (RM)'),
+            ),
+          ),
+          Padding(
+            //new
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              keyboardType: TextInputType.datetime,
+              controller: txtDateController,
+              readOnly: true,
+              onTap: _selectDate,
+              decoration: InputDecoration(labelText: 'Date'),
             ),
           ),
           Padding(
@@ -202,7 +233,12 @@ class _ExpenseListState extends State<ExpenseList> {
               margin: EdgeInsets.all(8.0),
               child: ListTile(
                 title: Text(expenses[index].desc),
-                subtitle: Text('Amount: ${expenses[index].amount}'),
+                subtitle: Row(children: [
+                  //edited
+                  Text('Amount: ${expenses[index].amount}'),
+                  const Spacer(),
+                  Text('Date: ${expenses[index].dateTime}')
+                ]),
                 trailing: IconButton(
                   icon: Icon(Icons.delete),
                   onPressed: () => _removeExpense(index),
@@ -284,7 +320,7 @@ class Expense {
       : desc = json['desc'] as String,
         amount = (json['amount'] as dynamic)
             .toDouble(), //sometime dart assume non decimal number as int and can't cast it to double auto. so take it as dynamic and cast to double
-            // json string value 10 will be treated as int 10 and can't be assigned into double
+        // json string value 10 will be treated as int 10 and can't be assigned into double
         dateTime = json['dateTime'] as String;
 
   // toJson will be automatically called by jsonEncode when necessary
