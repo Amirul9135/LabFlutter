@@ -32,29 +32,67 @@ class _ExpenseListState extends State<ExpenseList> {
   final TextEditingController totalAmountController = TextEditingController();
   double totalAmount = 0;
 
+  //edited
   void _addExpense() async {
     String description = descController.text.trim();
     String amount = amountController.text.trim();
-    totalAmount += double.parse(amount);
-    if (description.isNotEmpty && amount.isNotEmpty) {
-      setState(() {
-        expenses.add(Expense(amount, description));
-        descController.clear();
-        amountController.clear();
-        totalAmountController.text = totalAmount.toString();
-      });
+    if (amount.isNotEmpty && description.isNotEmpty) {
+      RequestController req = RequestController(
+          path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur",
+          server: "https://timeapi.io");
+      await req.get();
+      if (req.status() == 200) {
+        dynamic res = req.result();
+        String dateTime =
+            "${res["year"]}-${res["month"]}-${res["day"]} ${res["hour"]}:${res["minute"]}:${res["seconds"]}";
+        Expense exp = Expense(double.parse(amount), description, dateTime);
+        if (await exp.save()) {
+          setState(() {
+            expenses.add(exp);
+            descController.clear();
+            amountController.clear();
+            calculateTotal();
+          });
+        } else {
+          _showMessage("Failed to save Expenses data");
+        }
+      } else {
+        _showMessage("Failed to load current time");
+      }
     }
   }
 
+  //new
+  void calculateTotal() {
+    totalAmount = 0;
+    for (Expense ex in expenses) {
+      totalAmount += ex.amount;
+    }
+    totalAmountController.text = totalAmount.toString();
+  }
+
   void _removeExpense(int index) {
-    totalAmount -= double.parse(expenses[index].amount);
+    totalAmount -= expenses[index].amount;
     setState(() {
       expenses.removeAt(index);
       totalAmountController.text = totalAmount.toString();
     });
   }
 
+  //new
+  void _showMessage(String msg) {
+    if (mounted) {
+      //make sure this context is still mounted/exist
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+        ),
+      );
+    }
+  }
+
   // Navigate to Edit Screen
+  //edited
   void _editExpense(int index) {
     Navigator.push(
       context,
@@ -63,8 +101,7 @@ class _ExpenseListState extends State<ExpenseList> {
           expense: expenses[index],
           onSave: (editedExpense) {
             setState(() {
-              totalAmount += double.parse(editedExpense.amount) -
-                  double.parse(expenses[index].amount);
+              totalAmount += editedExpense.amount - expenses[index].amount;
               expenses[index] = editedExpense;
               totalAmountController.text = totalAmount.toString();
             });
@@ -74,39 +111,23 @@ class _ExpenseListState extends State<ExpenseList> {
     );
   }
 
-  void _save() async {
-    //test add 
-    RequestController req1 = RequestController(path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur", server: "https://timeapi.io");
-    
-    await req1.get();
-    print(req1.result());
-
-    RequestController req = RequestController(path: "/api/test.php?username=${widget.username}");
-    
-    req.setBody({
-      "data": expenses
-    });
-    await req.post();
-    print(req.status());
-    print(req.result());
-    // test add end
-  }
-
+  //new
   @override
-  void initState(){
+  void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Welcome to stupib Flutter ${widget.username}"),
-        ),
-      );
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      _showMessage("Welcome to stupib Flutter ${widget.username}");
+      expenses.addAll(await Expense.loadAll());
+      setState(() {
+        calculateTotal();
+      });
     });
   }
 
+  //edited
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build 
+    // TODO: implement build
 
     return Scaffold(
       appBar: AppBar(
@@ -146,10 +167,6 @@ class _ExpenseListState extends State<ExpenseList> {
           Container(
             child: _buildListView(),
           ),
-          ElevatedButton(
-            onPressed: _save,
-            child: Text('Save'),
-          ),
         ],
       ),
     );
@@ -162,7 +179,8 @@ class _ExpenseListState extends State<ExpenseList> {
         itemBuilder: (context, index) {
           // Unique key for each item
           return Dismissible(
-            key: Key(expenses[index].amount), // Unique key for each item
+            key: Key(
+                expenses[index].amount.toString()), // Unique key for each item
             background: Container(
               color: Colors.red,
               child: Center(
@@ -212,7 +230,7 @@ class EditExpenseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     descController.text = expense.desc;
-    amountController.text = expense.amount;
+    amountController.text = expense.amount.toString();
 
     return Scaffold(
       appBar: AppBar(
@@ -232,6 +250,7 @@ class EditExpenseScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
+              keyboardType: TextInputType.number,
               controller: amountController,
               decoration: InputDecoration(
                 labelText: 'Amount (RM)',
@@ -240,7 +259,9 @@ class EditExpenseScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              onSave(Expense(amountController.text, descController.text));
+              //edited
+              onSave(Expense(double.parse(amountController.text),
+                  descController.text, expense.dateTime));
               Navigator.pop(context);
             },
             child: Text('Save'),
@@ -253,11 +274,38 @@ class EditExpenseScreen extends StatelessWidget {
 
 class Expense {
   String desc;
-  String amount;
-  Expense(this.amount, this.desc);
+  double amount;
+  String dateTime;
+  Expense(this.amount, this.desc, this.dateTime);
 
-    Map<String, dynamic> toJson() => {
-        'desc': desc,
-        'amount': amount,
-      };
+  Expense.fromJson(Map<String, dynamic> json)
+      : desc = json['desc'] as String,
+        amount = (json['amount'] as dynamic)
+            .toDouble(), //sometime dart assume non decimal number as int and can't cast it to double auto. so take it as dynamic and cast to double
+        dateTime = json['dateTime'] as String;
+
+  Map<String, dynamic> toJson() =>
+      {'desc': desc, 'amount': amount, 'dateTime': dateTime};
+
+  Future<bool> save() async {
+    RequestController req = RequestController(path: "/api/expenses.php");
+    req.setBody(toJson());
+    await req.post();
+    if (req.status() == 200) {
+      return true;
+    }
+    return false;
+  }
+
+  static Future<List<Expense>> loadAll() async {
+    List<Expense> result = [];
+    RequestController req = RequestController(path: "/api/expenses.php");
+    await req.get();
+    if (req.status() == 200 && req.result() != null) {
+      for (var item in req.result()) {
+        result.add(Expense.fromJson(item));
+      }
+    }
+    return result;
+  }
 }
