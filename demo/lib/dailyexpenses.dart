@@ -1,6 +1,5 @@
 import 'package:demo/Model/expense.dart';
-import 'package:demo/request_controller.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:demo/Controller/request_controller.dart'; 
 import 'package:flutter/material.dart';
 
 //void main(){runApp(DailyExpensesApp(username: ""));}
@@ -30,8 +29,8 @@ class _ExpenseListState extends State<ExpenseList> {
   final List<Expense> expenses = [];
   final TextEditingController descController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
-  final TextEditingController txtDateController = TextEditingController(); //new
   final TextEditingController totalAmountController = TextEditingController();
+  final TextEditingController txtDateController = TextEditingController(); //new
   double totalAmount = 0;
 
   //edited
@@ -130,8 +129,7 @@ class _ExpenseListState extends State<ExpenseList> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       _showMessage("Welcome ${widget.username}");
-      expenses.addAll(await Expense.loadAll());
-
+      
       RequestController req = RequestController(
           path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur",
           server: "https://timeapi.io");
@@ -140,6 +138,8 @@ class _ExpenseListState extends State<ExpenseList> {
         txtDateController.text =
             "${res["year"]}-${res["month"]}-${res["day"]} ${res["hour"]}:${res["minute"]}:${res["seconds"]}";
       });
+      expenses.addAll(await Expense.loadAll());
+
       setState(() {
         calculateTotal();
       });
@@ -148,8 +148,7 @@ class _ExpenseListState extends State<ExpenseList> {
 
   //edited
   @override
-  Widget build(BuildContext context) {
-    // TODO: implement build
+  Widget build(BuildContext context) { 
     //moved message to init()
 
     return Scaffold(
@@ -162,7 +161,7 @@ class _ExpenseListState extends State<ExpenseList> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: descController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Description',
               ),
             ),
@@ -172,7 +171,7 @@ class _ExpenseListState extends State<ExpenseList> {
             child: TextField(
               keyboardType: TextInputType.number,
               controller: amountController,
-              decoration: InputDecoration(labelText: 'Amount (RM)'),
+              decoration: const InputDecoration(labelText: 'Amount (RM)'),
             ),
           ),
           Padding(
@@ -183,7 +182,7 @@ class _ExpenseListState extends State<ExpenseList> {
               controller: txtDateController,
               readOnly: true,
               onTap: _selectDate,
-              decoration: InputDecoration(labelText: 'Date'),
+              decoration:const InputDecoration(labelText: 'Date'),
             ),
           ),
           Padding(
