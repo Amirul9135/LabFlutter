@@ -131,12 +131,11 @@ class _ExpenseListState extends State<ExpenseList> {
       _showMessage("Welcome ${widget.username}");
       
       RequestController req = RequestController(
-          path: "/api/Time/current/zone?timeZone=Asia/Kuala_Lumpur",
-          server: "https://timeapi.io");
+          path: "/api/timezone/Asia/Kuala_Lumpur",
+          server: "http://worldtimeapi.org");
       req.get().then((value) {
         dynamic res = req.result();
-        txtDateController.text =
-            "${res["year"]}-${res["month"]}-${res["day"]} ${res["hour"]}:${res["minute"]}:${res["seconds"]}";
+        txtDateController.text = res["datetime"].toString().substring(0,19).replaceAll('T', ' ');
       });
       expenses.addAll(await Expense.loadAll());
 
