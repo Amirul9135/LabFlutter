@@ -1,6 +1,7 @@
 import 'package:demo/Controller/request_controller.dart';
 
 class Expense {
+  int? id;
   String desc;
   double amount;
   String dateTime;
@@ -10,7 +11,8 @@ class Expense {
       : desc = json['desc'] as String,
         amount = (json['amount'] as dynamic)
             .toDouble(), 
-        dateTime = json['dateTime'] as String;
+        dateTime = json['dateTime'] as String,
+        id = json['id'] as int?;
 
   // toJson will be automatically called by jsonEncode when necessary
   Map<String, dynamic> toJson() =>
