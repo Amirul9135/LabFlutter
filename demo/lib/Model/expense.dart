@@ -1,6 +1,8 @@
-import 'package:demo/Controller/request_controller.dart';
+//import 'package:demo/Controller/request_controller.dart';
+import 'package:demo/Controller/sqlite_db.dart';
 
 class Expense {
+  static const String SQLiteTable = "expense";
   int? id;
   String desc;
   double amount;
@@ -19,16 +21,36 @@ class Expense {
       {'desc': desc, 'amount': amount, 'dateTime': dateTime};
 
   Future<bool> save() async {
-    RequestController req = RequestController(path: "/api/expenses.php");
+    try{
+      await SQLiteDB().insert(SQLiteTable, toJson());
+      return true;
+    }catch(e){
+      return false;
+    }
+   /* 
+   API Operation
+   RequestController req = RequestController(path: "/api/expenses.php");
     req.setBody(toJson());
     await req.post();
     if (req.status() == 200) {
       return true;
     }
-    return false;
+    return false;*/
   }
 
   static Future<List<Expense>> loadAll() async {
+
+    
+    List<Map<String,dynamic>> result = await SQLiteDB().queryAll(SQLiteTable);
+    List<Expense> expenses = [];
+    for(dynamic item in result){
+      expenses.add(Expense.fromJson(item));
+    }
+
+    return expenses;
+
+    /*
+    API Operation
     List<Expense> result = [];
     RequestController req = RequestController(path: "/api/expenses.php");
     await req.get();
@@ -37,6 +59,6 @@ class Expense {
         result.add(Expense.fromJson(item));
       }
     }
-    return result;
+    return result;*/
   }
 }

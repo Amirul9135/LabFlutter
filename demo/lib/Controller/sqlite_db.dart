@@ -16,9 +16,9 @@ class SQLiteDB{
       return _db!;
     }
     String path = join(await getDatabasesPath(), _dbName,);
-    _db =  await openDatabase(path, version: 1, onCreate: (db, version) async {
+    _db =  await openDatabase(path, version: 1, onCreate: (createdDb, version) async {
       for(String tableSql in SQLiteDB.tableSQLStrings){
-        await _db!.execute(tableSql);
+        await createdDb.execute(tableSql);
       }
     },);  
     return _db!;
