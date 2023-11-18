@@ -11,8 +11,7 @@ class Expense {
 
   Expense.fromJson(Map<String, dynamic> json)
       : desc = json['desc'] as String,
-        amount = (json['amount'] as dynamic)
-            .toDouble(), 
+        amount = (json['amount'] as dynamic).toDouble(),
         dateTime = json['dateTime'] as String,
         id = json['id'] as int?;
 
@@ -21,13 +20,12 @@ class Expense {
       {'desc': desc, 'amount': amount, 'dateTime': dateTime};
 
   Future<bool> save() async {
-    try{
-      await SQLiteDB().insert(SQLiteTable, toJson());
+    if (await SQLiteDB().insert(SQLiteTable, toJson()) != 0) {
       return true;
-    }catch(e){
+    } else {
       return false;
     }
-   /* 
+    /* 
    API Operation
    RequestController req = RequestController(path: "/api/expenses.php");
     req.setBody(toJson());
@@ -39,11 +37,9 @@ class Expense {
   }
 
   static Future<List<Expense>> loadAll() async {
-
-    
-    List<Map<String,dynamic>> result = await SQLiteDB().queryAll(SQLiteTable);
+    List<Map<String, dynamic>> result = await SQLiteDB().queryAll(SQLiteTable);
     List<Expense> expenses = [];
-    for(dynamic item in result){
+    for (dynamic item in result) {
       expenses.add(Expense.fromJson(item));
     }
 

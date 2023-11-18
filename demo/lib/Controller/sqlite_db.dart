@@ -2,15 +2,17 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class SQLiteDB{
-  static Database? _db;
   static const String _dbName = "lab_db";
 
+  Database? _db;
+  
   SQLiteDB._(); //private constructor
   static final SQLiteDB _instance = SQLiteDB._();
 
   factory SQLiteDB(){
     return _instance;
   }
+  
   Future<Database> get database async {
     if(_db != null){
       return _db!;
@@ -23,6 +25,16 @@ class SQLiteDB{
     },);  
     return _db!;
   }
+  
+  static List<String> tableSQLStrings =
+   [
+    '''
+      CREATE TABLE IF NOT EXISTS expense  (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            amount DOUBLE, 
+            desc TEXT, 
+            dateTime DATETIME) 
+          ''', 
+   ];
 
   Future<int> insert(String tableName, Map<String, dynamic> row) async {
     Database db = await _instance.database;
@@ -45,14 +57,5 @@ class SQLiteDB{
     return await db.delete(tableName, where: '$idColumn = ?', whereArgs: [idValue]);
   }
   
-  static List<String> tableSQLStrings =
-   [
-    '''
-      CREATE TABLE IF NOT EXISTS expense  (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            amount DOUBLE, 
-            desc TEXT, 
-            dateTime DATETIME) 
-          ''', 
-   ];
 
 }
